@@ -1,15 +1,16 @@
 import os
 from setuptools import setup, find_packages
 
-version = '0.1.0a1'
+VERSION = '0.1.0a1'
+README_FILENAME = 'README.rst'
 
-readme = open(os.path.join(os.path.dirname(__file__), 'README.md'))
+readme = open(os.path.join(os.path.dirname(__file__), README_FILENAME))
 long_description = readme.read()
 readme.close()
 
 setup(
     name='django-cbv-formpreview',
-    version=version,
+    version=VERSION,
     author='Ryan Kaskel',
     author_email='dev@ryankaskel.com',
     url='https://github.com/ryankask/django-cbv-formpreview',
