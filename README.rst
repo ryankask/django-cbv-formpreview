@@ -1,5 +1,5 @@
 ======================
-django-cvs-formpreview
+django-cbv-formpreview
 ======================
 
 The ``FormPreview`` class from the ``contrib.formtools`` app is a class based view that's been in Django for over 5 years. Originally written by Adrian Holovaty, it hasn't changed significantly since its release.
