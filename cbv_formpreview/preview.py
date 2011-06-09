@@ -7,6 +7,8 @@ from django.utils.crypto import constant_time_compare
 from django.contrib.formtools.utils import form_hmac
 from django.views.generic import FormView
 
+PREVIEW_STAGE = 'preview'
+POST_STAGE = 'post'
 AUTO_ID = 'formtools_%s' # Each form here uses this as its auto_id parameter.
 STAGE_FIELD = 'stage'
 HASH_FIELD = 'hash'
@@ -21,7 +23,10 @@ class FormPreview(FormView):
         super(FormPreview, self).__init__(*args, **kwargs)
         # form should be a Form class, not an instance.
         self.form_class = form_class
-        # A relic from the past; override get_context_data to pass extra context
+        self._preview_stage = PREVIEW_STAGE
+        self._post_stage = POST_STAGE
+        self._stages = {'1': self._preview_stage, '2': self._post_stage}
+        # A relic of the past; override get_context_data to pass extra context
         # to the template. Left in for backwards compatibility.
         self.state = {}
 
@@ -29,12 +34,8 @@ class FormPreview(FormView):
         return self.dispatch(request, *args, **kwargs)
 
     def dispatch(self, request, *args, **kwargs):
-        self.preview_stage = 'preview'
-        self.post_stage = 'post'
-        stages = {'1': self.preview_stage, '2': self.post_stage}
-
         posted_stage = request.POST.get(self.unused_name(STAGE_FIELD))
-        self.stage = stages.get(posted_stage, self.preview_stage)
+        self._stage = self._stages.get(posted_stage, self._preview_stage)
 
         # For backwards compatiblity
         self.parse_params(*args, **kwargs)
@@ -78,12 +79,12 @@ class FormPreview(FormView):
     def preview_post(self, request):
         """ For backwards compatibility. failed_hash calls this method by
         default. """
-        self.stage = self.preview_stage
+        self._stage = self._preview_stage
         return self.post(request)
 
     def form_valid(self, form):
         context = self._get_context_data(form)
-        if self.stage == self.preview_stage:
+        if self._stage == self._preview_stage:
             self.process_preview(self.request, form, context)
             context['hash_field'] = self.unused_name(HASH_FIELD)
             context['hash_value'] = self.security_hash(self.request, form)
