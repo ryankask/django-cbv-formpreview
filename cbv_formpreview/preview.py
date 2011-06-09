@@ -60,7 +60,7 @@ class FormPreview(FormView):
 
     def _get_context_data(self, form):
         """ For backwards compatiblity. """
-        context = self.get_context_data()
+        context = self.get_context_data(form=form)
         context.update(self.get_context(self.request, form))
         return context
 
