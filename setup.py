@@ -17,6 +17,9 @@ setup(
     description='Django\'s FormPreview updated to use class based views.',
     long_description=long_description,
     packages=find_packages(),
+    package_data = {
+        'cbv_formpreview': ['templates/*.html', 'templates/formtools/*.html']
+    },
     zip_safe=False,
     classifiers=[
         'Environment :: Web Environment',
