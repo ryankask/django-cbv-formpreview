@@ -1,0 +1,9 @@
+The FormPreview class and associated tests are all part of the Django
+project. The testing mechanisms are borrowed from Alex Gaynor and
+django-taggit.
+
+This package contains modifications by Ryan Kaskel of both of the
+above.
+
+The licenses of the Django project and django-taggit can be found in this
+package's LICENSE file.

@@ -1,0 +1,4 @@
+include README.md
+include LICENSE
+include AUTHORS
+recursive-include cbv_formpreview/templates *.html
