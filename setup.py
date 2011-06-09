@@ -14,6 +14,7 @@ setup(
     author='Ryan Kaskel',
     author_email='dev@ryankaskel.com',
     url='https://github.com/ryankask/django-cbv-formpreview',
+    license='BSD',
     description='Django\'s FormPreview updated to use class based views.',
     long_description=long_description,
     packages=find_packages(),
