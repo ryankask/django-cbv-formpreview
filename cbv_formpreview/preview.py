@@ -2,7 +2,6 @@
 Formtools Preview application.
 """
 from django.conf import settings
-from django.shortcuts import render_to_response
 from django.utils.crypto import constant_time_compare
 from django.contrib.formtools.utils import form_hmac
 from django.views.generic import FormView
@@ -99,7 +98,7 @@ class FormPreview(FormView):
     def form_invalid(self, form):
         context = self._get_context_data(form)
         self.template_name = self.form_template
-        return render_to_response(context)
+        return self.render_to_response(context)
 
     # METHODS SUBCLASSES MIGHT OVERRIDE IF APPROPRIATE ########################
 

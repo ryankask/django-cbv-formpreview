@@ -73,6 +73,12 @@ class PreviewTests(TestCase):
         self.assertEqual(response.context['is_bound_form'], False)
         self.assertEqual(response.context['form'].initial, {'field1': 'Works!'})
 
+    def test_invalid_form(self):
+        """ Verifies that an invalid form displays the correct template. """
+        self.test_data.pop('field1')
+        response = self.client.post('/preview/', self.test_data)
+        self.assertTemplateUsed(response, 'formtools/form.html')
+
     def test_form_preview(self):
         """
         Test contrib.formtools.preview form preview rendering.
