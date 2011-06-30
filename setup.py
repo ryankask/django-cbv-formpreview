@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION = '0.1.3a1'
+VERSION = '0.2.0a1'
 README_FILENAME = 'README.rst'
 
 readme = open(os.path.join(os.path.dirname(__file__), README_FILENAME))
@@ -19,7 +19,7 @@ setup(
     long_description=long_description,
     packages=find_packages(),
     package_data = {
-        'cbv_formpreview': ['templates/*.html', 'templates/formtools/*.html']
+        'cbv_formpreview': ['templates/cbv_formpreview/*.html']
     },
     zip_safe=False,
     classifiers=[
