@@ -1,10 +1,7 @@
 from django.conf.urls.defaults import patterns, url
 
-from cbv_formpreview.tests.tests import (
-    TestForm,
-    TestFormPreview
-)
+from cbv_formpreview.tests.tests import TestFormPreview
 
 urlpatterns = patterns('',
-    url(r'^preview/', TestFormPreview(TestForm)),
+    url(r'^preview/', TestFormPreview.as_view(), name='preview')
 )

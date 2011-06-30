@@ -1,6 +1,3 @@
-"""
-Formtools Preview application.
-"""
 from django.conf import settings
 from django.utils.crypto import constant_time_compare
 from django.contrib.formtools.utils import form_hmac
@@ -8,47 +5,30 @@ from django.views.generic import FormView
 
 PREVIEW_STAGE = 'preview'
 POST_STAGE = 'post'
-AUTO_ID = 'formtools_%s' # Each form here uses this as its auto_id parameter.
 STAGE_FIELD = 'stage'
 HASH_FIELD = 'hash'
 
+
 class FormPreview(FormView):
-    preview_template = 'formtools/preview.html'
-    form_template = 'formtools/form.html'
-
-    # METHODS SUBCLASSES SHOULDN'T OVERRIDE ###################################
-
-    def __init__(self, form_class, *args, **kwargs):
-        super(FormPreview, self).__init__(*args, **kwargs)
-        # form should be a Form class, not an instance.
-        self.form_class = form_class
-        self._preview_stage = PREVIEW_STAGE
-        self._post_stage = POST_STAGE
-        self._stages = {'1': self._preview_stage, '2': self._post_stage}
-        # A relic of the past; override get_context_data to pass extra context
-        # to the template. Left in for backwards compatibility.
-        self.state = {}
-
-    def __call__(self, request, *args, **kwargs):
-        return self.dispatch(request, *args, **kwargs)
+    preview_template = None
+    form_template = None
 
     def dispatch(self, request, *args, **kwargs):
-        posted_stage = request.POST.get(self.unused_name(STAGE_FIELD))
-        self._stage = self._stages.get(posted_stage, self._preview_stage)
+        self._preview_stage = PREVIEW_STAGE
+        self._post_stage = POST_STAGE
+        stages = {'1': self._preview_stage, '2': self._post_stage}
 
-        # For backwards compatiblity
-        self.parse_params(*args, **kwargs)
+        posted_stage = request.POST.get(self.unused_name(STAGE_FIELD))
+        self._stage = stages.get(posted_stage, self._preview_stage)
 
         return super(FormPreview, self).dispatch(request, *args, **kwargs)
 
     def unused_name(self, name):
-        """
-        Given a first-choice name, adds an underscore to the name until it
+        """ Given a first-choice name, adds an underscore to the name until it
         reaches a name that isn't claimed by any field in the form.
 
         This is calculated rather than being hard-coded so that no field names
-        are off-limits for use in the form.
-        """
+        are off-limits for use in the form. """
         while 1:
             try:
                 self.form_class.base_fields[name]
@@ -57,130 +37,60 @@ class FormPreview(FormView):
             name += '_'
         return name
 
-    def _get_context_data(self, form):
-        """ For backwards compatiblity. """
-        context = self.get_context_data(form=form)
-        context.update(self.get_context(self.request, form))
-        return context
-
     def get(self, request, *args, **kwargs):
-        "Displays the form"
-        form_class = self.get_form_class()
-        form = self.get_form(form_class)
-        context = self._get_context_data(form)
         self.template_name = self.form_template
-        return self.render_to_response(context)
+        return super(FormPreview, self).get(request, *args, **kwargs)
 
     def _check_security_hash(self, token, form):
-        expected = self.security_hash(self.request, form)
+        expected = self.security_hash(form)
         return constant_time_compare(token, expected)
 
-    def preview_post(self, request):
-        """ For backwards compatibility. failed_hash calls this method by
-        default. """
-        self._stage = self._preview_stage
-        return self.post(request)
-
     def form_valid(self, form):
-        context = self._get_context_data(form)
+        context = self.get_context_data(form=form)
+        hash_field_name = self.unused_name(HASH_FIELD)
+
         if self._stage == self._preview_stage:
-            self.process_preview(self.request, form, context)
-            context['hash_field'] = self.unused_name(HASH_FIELD)
-            context['hash_value'] = self.security_hash(self.request, form)
+            self.process_preview(form, context)
+            context['hash_field'] = hash_field_name
+            context['hash_value'] = self.security_hash(form)
             self.template_name = self.preview_template
             return self.render_to_response(context)
         else:
-            form_hash = self.request.POST.get(self.unused_name(HASH_FIELD), '')
+            form_hash = self.request.POST.get(hash_field_name, '')
             if not self._check_security_hash(form_hash, form):
-                return self.failed_hash(self.request) # Security hash failed.
-            return self.done(self.request, form.cleaned_data)
+                return self.failed_hash(context) # Security hash failed.
+            return self.done(form)
 
     def form_invalid(self, form):
-        context = self._get_context_data(form)
         self.template_name = self.form_template
-        return self.render_to_response(context)
+        return super(FormPreview, self).form_invalid(form)
 
-    # METHODS SUBCLASSES MIGHT OVERRIDE IF APPROPRIATE ########################
-
-    def get_auto_id(self):
-        """
-        Hook to override the ``auto_id`` kwarg for the form. Needed when
-        rendering two form previews in the same template.
-        """
-        return AUTO_ID
-
-    def get_initial(self, request=None):
-        """
-        Takes a request argument and returns a dictionary to pass to the form's
-        ``initial`` kwarg when the form is being created from an HTTP get.
-        """
-        return self.initial
-
-    def get_context(self, request, form):
-        "Context for template rendering."
-        context = {
-            'form': form,
-            'stage_field': self.unused_name(STAGE_FIELD),
-            'state': self.state
-        }
-        return context
-
-    def get_form_kwargs(self):
-        """ This is overriden to maintain backward compatibility and pass
-        the request to get_initial. """
-        kwargs = {
-            'initial': self.get_initial(self.request),
-            'auto_id': self.get_auto_id()
-        }
-        if self.request.method in ('POST', 'PUT'):
-            kwargs.update({
-                'data': self.request.POST,
-                'files': self.request.FILES,
-            })
+    def get_context_data(self, **kwargs):
+        kwargs.update({'stage_field': self.unused_name(STAGE_FIELD)})
         return kwargs
 
-    def parse_params(self, *args, **kwargs):
-        """
-        Called in dispatch() prior to delegating the request to get() or post().
-        Given captured args and kwargs from the URLconf, allows the ability to
-        save something on the instance and/or raises Http404 if necessary.
-
-        For example, this URLconf captures a user_id variable:
-
-            (r'^contact/(?P<user_id>\d{1,6})/$', MyFormPreview(MyForm)),
-
-        In this case, the kwargs variable in parse_params would be
-        {'user_id': 32} for a request to '/contact/32/'. You can use that
-        user_id to make sure it's a valid user and/or save it for later, for
-        use in done().
-        """
+    def process_preview(self, form, context):
+        """ Given a validated form, performs any extra processing before
+        displaying the preview page, and saves any extra data in
+        context. """
         pass
 
-    def process_preview(self, request, form, context):
-        """
-        Given a validated form, performs any extra processing before displaying
-        the preview page, and saves any extra data in context.
-        """
-        pass
-
-    def security_hash(self, request, form):
-        """
-        Calculates the security hash for the given HttpRequest and Form instances.
+    def security_hash(self, form):
+        """ Calculates the security hash for the given HttpRequest and
+        Form instances.
 
         Subclasses may want to take into account request-specific information,
-        such as the IP address.
-        """
+        such as the IP address. """
         return form_hmac(form)
 
-    def failed_hash(self, request):
-        "Returns an HttpResponse in the case of an invalid security hash."
-        return self.preview_post(request)
+    def failed_hash(self, context):
+        """ Returns an HttpResponse in the case of an invalid security
+        hash. """
+        self._stage = self._preview_stage
+        return self.post(self.request)
 
-    # METHODS SUBCLASSES MUST OVERRIDE ########################################
-
-    def done(self, request, cleaned_data):
-        """
-        Does something with the cleaned_data and returns an
-        HttpResponseRedirect.
-        """
-        raise NotImplementedError('You must define a done() method on your %s subclass.' % self.__class__.__name__)
+    def done(self, form):
+        """ The only method required to be overriden by subclasses. Does
+        something with the form and returns an HttpResponseRedirect. """
+        msg = 'You must define a done() method on your %s subclass.'
+        raise NotImplementedError(msg % self.__class__.__name__)
