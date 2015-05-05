@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.utils.crypto import constant_time_compare
-from django.contrib.formtools.utils import form_hmac
+try:
+    from django.contrib.formtools.utils import form_hmac
+except ImportError:
+    from formtools.utils import form_hmac
 from django.views.generic import FormView
 
 PREVIEW_STAGE = 'preview'
